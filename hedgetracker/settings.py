@@ -129,7 +129,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Logging settings
 
-DJANGO_LOG_LEVEL = 'DEBUG'
+DJANGO_LOG_LEVEL = 'INFO'
 
 LOGGING = {
     'version': 1,

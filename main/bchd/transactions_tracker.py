@@ -17,12 +17,25 @@ logger = logging.getLogger(__name__)
 def save_settlement(data):
     funding = Funding(
         address=data['address'],
-        transaction=data['funding']['fundingTransaction']
+        transaction=data['funding']['fundingTransaction'],
+        output_index=data['funding']['fundingOutput'],
+        low_liquidation_price=data['parameters']['lowLiquidationPrice'],
+        high_liquidation_price=data['parameters']['highLiquidationPrice'],
+        earliest_liquidation_height=data['parameters']['earliestLiquidationHeight'],
+        maturity_height=data['parameters']['maturityHeight'],
+        low_truncated_zeroes=data['parameters']['lowTruncatedZeroes'],
+        high_low_delta_truncated_zeroes=data['parameters']['highLowDeltaTruncatedZeroes'],
+        hedge_units_x_sats_per_bch_high_trunc=data['parameters']['hedgeUnitsXSatsPerBchHighTrunc'],
+        payout_sats_low_trunc=data['parameters']['payoutSatsLowTrunc']
     )
     funding.save()
     settlement = Settlement(
         funding=funding,
-        settlement_type=data['settlement']['settlementType']
+        spending_transaction=data['settlement']['spendingTransaction'],
+        settlement_type=data['settlement']['settlementType'],
+        hedge_satoshis=data['settlement']['hedgeSatoshis'],
+        long_satoshis=data['settlement']['longSatoshis'],
+        oracle_price=data['settlement']['oraclePrice']
     )
     settlement.save()
 
