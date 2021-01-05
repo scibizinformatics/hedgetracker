@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
+from decouple import config
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -76,8 +77,12 @@ WSGI_APPLICATION = 'hedgetracker.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': config('POSTGRES_DB', default='hedgetracker'),
+        'HOST': config('POSTGRES_HOST', default='localhost'),
+        'PORT': config('POSTGRES_PORT', default=5432, cast=int),
+        'USER': config('POSTGRES_USER', default='postgres'),
+        'PASSWORD': config('POSTGRES_PASSWORD', default='badpassword')
     }
 }
 
@@ -119,3 +124,47 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+
+# Logging settings
+
+DJANGO_LOG_LEVEL = 'DEBUG'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'console': {
+            'format': '[%(asctime)s %(name)s] %(levelname)s [%(pathname)s:%(lineno)d] - %(message)s',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'console'
+        },
+    },
+    'loggers': {
+        '': {
+            'level': 'WARNING',
+            'handlers': ['console'],
+            'propagate': False
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': DJANGO_LOG_LEVEL,
+            'propagate': False
+        },
+        'main': {
+            'handlers': ['console'],
+            'level': DJANGO_LOG_LEVEL,
+            'propagate': False
+        },
+        'django.template': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False
+        }
+    },
+}

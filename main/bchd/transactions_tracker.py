@@ -1,5 +1,6 @@
 import grpc
 import time
+import logging
 
 import sys
 sys.path.append('/app/main/bchd/protobuf')
@@ -8,8 +9,26 @@ import bchrpc_pb2 as pb
 import bchrpc_pb2_grpc as bchrpc
 
 from main.anyhedge import contract_parser
+from main.models import Funding, Settlement
+
+logger = logging.getLogger(__name__)
+
+
+def save_settlement(data):
+    funding = Funding(
+        address=data['address'],
+        transaction=data['funding']['fundingTransaction']
+    )
+    funding.save()
+    settlement = Settlement(
+        funding=funding,
+        settlement_type=data['settlement']['settlementType']
+    )
+    settlement.save()
+
 
 def run():
+    logger.info('Running the tracker...')
     creds = grpc.ssl_channel_credentials()
     with grpc.secure_channel('bchd.ny1.simpleledger.io', creds) as channel:
         stub = bchrpc.bchrpcStub(channel)
@@ -29,4 +48,7 @@ def run():
         for notification in stub.SubscribeTransactions(req):
             raw_tx_hex = notification.serialized_transaction.hex()
             parsed_tx = contract_parser.detect_and_parse(raw_tx_hex)
-            print(parsed_tx)
+            logger.info(parsed_tx)
+            if parsed_tx:
+                save_settlement(parsed_tx)
+                logger.info('Saved tx!')

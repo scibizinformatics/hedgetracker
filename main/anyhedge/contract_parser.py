@@ -12,5 +12,5 @@ def detect_and_parse(raw_tx_hex):
     )
     result = {}
     if p.stdout:
-       result = json.loads(p.stdout.decode('utf8'))
+       result = json.loads(p.stdout)
     return result
