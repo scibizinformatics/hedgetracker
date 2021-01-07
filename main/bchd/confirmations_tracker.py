@@ -16,23 +16,26 @@ from main.models import Settlement, Block
 logger = logging.getLogger(__name__)
 
 
-def save_confirmation(txid, block_height):
-    settlement = Settlement.objects.filter(spending_transaction=txid)
-    block_check = Block.objects.filter(height=block_height)
-    if block_check.exists():
-        settlement.block = block_check.first()
-        settlement.save()
-    else:
-        url = 'https://bchd.fountainhead.cash/v1/GetBlockInfo'
-        resp = requests.post(url, json={'height': block_height})
-        timestamp = int(resp.json()['info']['timestamp'])
-        block = Block(
-            height=block_height,
-            timestamp=datetime.fromtimestamp(timestamp).replace(tzinfo=pytz.utc)
-        )
-        block.save()
-        settlement.block = block
-        settlement.save()
+def process_confirmation(txid, block_height):
+    settlement_check = Settlement.objects.filter(spending_transaction=txid)
+    if settlement_check.exists():
+        settlement = settlement_check.first()
+        block_check = Block.objects.filter(height=block_height)
+        if block_check.exists():
+            settlement.block = block_check.first()
+            settlement.save()
+        else:
+            url = 'https://bchd.fountainhead.cash/v1/GetBlockInfo'
+            resp = requests.post(url, json={'height': block_height})
+            timestamp = int(resp.json()['info']['timestamp'])
+            block = Block(
+                height=block_height,
+                timestamp=datetime.fromtimestamp(timestamp).replace(tzinfo=pytz.utc)
+            )
+            block.save()
+            settlement.block = block
+            settlement.save()
+        logger.info('Saved confirmation!')
 
 
 def run():
@@ -54,5 +57,4 @@ def run():
         for notification in stub.SubscribeTransactions(req):
             tx = notification.unconfirmed_transaction.transaction
             tx_hash = bytearray(tx.hash[::-1]).hex()
-            save_confirmation(tx_hash, tx.block_height)
-            logger.info('Saved confirmation!')
+            process_confirmation(tx_hash, tx.block_height)

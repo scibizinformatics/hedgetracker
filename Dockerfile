@@ -13,4 +13,4 @@ RUN wget -O /usr/local/bin/wait-for-it.sh https://raw.githubusercontent.com/vish
     chmod +x /usr/local/bin/wait-for-it.sh
 
 ENTRYPOINT [ "wait-for-it.sh", "postgres:5432", "--", "sh", "entrypoint.sh" ]
-CMD [ "python", "manage.py", "runtracker" ]
+CMD [ "wait-for-it.sh", "postgres:5432", "--", "supervisord", "-c", "/app/supervisord.conf", "--nodaemon" ]
