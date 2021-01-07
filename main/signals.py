@@ -11,11 +11,11 @@ def associate_block(sender, instance, **kwargs):
         instance.update(maturity_block=block_check.first())
     else:
         url = 'https://bchd.fountainhead.cash/v1/GetBlockInfo'
-        resp =requests.post(url, json={'height': instance.maturity_height})
+        resp = requests.post(url, json={'height': instance.maturity_height})
         timestamp = int(resp.json()['info']['timestamp'])
         block = Block(
             height=instance.maturity_height,
-            timestamp=datetime.fromtimestamp(1608929271).replace(tzinfo=pytz.utc)
+            timestamp=datetime.fromtimestamp(timestamp).replace(tzinfo=pytz.utc)
         )
         block.save()
         instance.update(maturity_block=block)

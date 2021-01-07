@@ -15,7 +15,7 @@ class Funding(models.Model):
     maturity_height = models.IntegerField()
     maturity_block = models.ForeignKey(
         Block,
-        related_name='funding_transactions',
+        related_name='matured_transactions',
         on_delete=models.CASCADE
     )
     low_truncated_zeroes = models.CharField(max_length=10)
@@ -33,3 +33,10 @@ class Settlement(models.Model):
     hedge_satoshis = models.IntegerField()
     long_satoshis = models.IntegerField()
     oracle_price = models.IntegerField()
+    block = models.ForeignKey(
+        Block,
+        related_name='settlement_transactions',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
