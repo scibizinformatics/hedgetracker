@@ -3,3 +3,4 @@ grpcio==1.34.0
 grpcio-tools==1.34.0
 psycopg2-binary==2.8.6
 python-decouple==3.3
+requests==2.25.1
