@@ -38,10 +38,11 @@ def save_settlement(data):
         oracle_price=data['settlement']['oraclePrice']
     )
     settlement.save()
+    logger.info('Settlement transaction: {0}'.format(settlement.spending_transaction))
 
 
 def run():
-    logger.info('Running the tracker...')
+    logger.info('Running the transactions tracker...')
     creds = grpc.ssl_channel_credentials()
     with grpc.secure_channel('bchd.ny1.simpleledger.io', creds) as channel:
         stub = bchrpc.bchrpcStub(channel)
@@ -61,7 +62,5 @@ def run():
         for notification in stub.SubscribeTransactions(req):
             raw_tx_hex = notification.serialized_transaction.hex()
             parsed_tx = contract_parser.detect_and_parse(raw_tx_hex)
-            logger.info(parsed_tx)
             if parsed_tx:
                 save_settlement(parsed_tx)
-                logger.info('Saved tx!')

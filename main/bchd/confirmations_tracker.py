@@ -35,11 +35,11 @@ def process_confirmation(txid, block_height):
             block.save()
             settlement.block = block
             settlement.save()
-        logger.info('Saved confirmation!')
+        logger.info('Confirmed Tx @ {0}: {1}'.format(block_height, txid))
 
 
 def run():
-    logger.info('Running the tracker...')
+    logger.info('Running the confirmations tracker...')
     creds = grpc.ssl_channel_credentials()
     with grpc.secure_channel('bchd.ny1.simpleledger.io', creds) as channel:
         stub = bchrpc.bchrpcStub(channel)
@@ -55,7 +55,6 @@ def run():
         req.subscribe.CopyFrom(tx_filter)
 
         for notification in stub.SubscribeTransactions(req):
-            logger.info(notification)
             tx = notification.unconfirmed_transaction.transaction
             tx_hash = bytearray(tx.hash[::-1]).hex()
             process_confirmation(tx_hash, tx.block_height)
