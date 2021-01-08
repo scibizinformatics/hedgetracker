@@ -55,6 +55,7 @@ def run():
         req.subscribe.CopyFrom(tx_filter)
 
         for notification in stub.SubscribeTransactions(req):
+            logger.info(notification)
             tx = notification.unconfirmed_transaction.transaction
             tx_hash = bytearray(tx.hash[::-1]).hex()
             process_confirmation(tx_hash, tx.block_height)
