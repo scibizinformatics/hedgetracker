@@ -49,12 +49,12 @@ def run():
 
         req = pb.GetBlockchainInfoRequest()
         resp = stub.GetBlockchainInfo(req)
+        logger.info(resp)
 
         tx_filter = pb.TransactionFilter()
         tx_filter.all_transactions = True
 
         req = pb.SubscribeTransactionsRequest()
-        req.include_in_block = True
         req.include_mempool = True
         req.serialize_tx = True
         req.subscribe.CopyFrom(tx_filter)

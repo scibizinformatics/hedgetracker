@@ -16,7 +16,9 @@ class Funding(models.Model):
     maturity_block = models.ForeignKey(
         Block,
         related_name='matured_transactions',
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
     )
     low_truncated_zeroes = models.CharField(max_length=10)
     high_low_delta_truncated_zeroes = models.CharField(max_length=10)
