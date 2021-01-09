@@ -17,6 +17,9 @@ from django.conf import settings
 from main.anyhedge import contract_parser
 from main.models import Funding, Settlement, Block
 
+from bloom_filter import BloomFilter
+
+bloom = BloomFilter(max_elements=10000, error_rate=0.1)
 logger = logging.getLogger(__name__)
 
 
@@ -116,11 +119,13 @@ def run():
         logger.info('tx: {0} | confirmed: {1} [{2}]'.format(tx_hash, str(confirmed).lower(), tx.block_height))
 
         if len(tx.inputs) == 1 and len(tx.outputs) == 2:
-            if not Settlement.objects.filter(spending_transaction=tx_hash).exists():
-                raw_tx_hex = get_raw_transaction_hex(tx_hash)
-                parsed_tx = contract_parser.detect_and_parse(raw_tx_hex)
-                if parsed_tx:
-                    save_settlement(parsed_tx)
+            if tx_hash not in bloom:
+                if not Settlement.objects.filter(spending_transaction=tx_hash).exists():                
+                    raw_tx_hex = get_raw_transaction_hex(tx_hash)
+                    parsed_tx = contract_parser.detect_and_parse(raw_tx_hex)
+                    if parsed_tx:
+                        save_settlement(parsed_tx)
+                bloom.add(tx_hash)
 
         if confirmed:
             process_confirmation(tx_hash, tx.block_height)
