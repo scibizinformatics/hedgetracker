@@ -113,11 +113,14 @@ def run():
             tx = notification.confirmed_transaction
 
         tx_hash = bytearray(tx.hash[::-1]).hex()
-        if confirmed:
-            process_confirmation(tx_hash, tx.block_height)
+        logger.info('tx: {0} | confirmed: {1} [{2}]'.format(tx_hash, str(confirmed).lower(), tx.block_height))
 
         if len(tx.inputs) == 1 and len(tx.outputs) == 2:
-            raw_tx_hex = get_raw_transaction_hex(tx_hash)
-            parsed_tx = contract_parser.detect_and_parse(raw_tx_hex)
-            if parsed_tx:
-                save_settlement(parsed_tx)
+            if not Settlement.objects.filter(spending_transaction=tx_hash).exists():
+                raw_tx_hex = get_raw_transaction_hex(tx_hash)
+                parsed_tx = contract_parser.detect_and_parse(raw_tx_hex)
+                if parsed_tx:
+                    save_settlement(parsed_tx)
+
+        if confirmed:
+            process_confirmation(tx_hash, tx.block_height)

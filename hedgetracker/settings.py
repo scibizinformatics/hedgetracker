@@ -136,7 +136,7 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'console': {
-            'format': '[%(asctime)s %(name)s] %(levelname)s [%(pathname)s:%(lineno)d] - %(message)s',
+            'format': '[%(asctime)s %(levelname)s] [%(pathname)s:%(lineno)d] - %(message)s',
         },
     },
     'handlers': {
