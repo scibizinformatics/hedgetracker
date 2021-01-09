@@ -1,3 +1,4 @@
+import os
 import grpc
 import time
 import pytz
@@ -12,6 +13,7 @@ sys.path.append('/app/main/bchd/protobuf')
 import bchrpc_pb2 as pb
 import bchrpc_pb2_grpc as bchrpc
 
+from django.conf import settings
 from main.anyhedge import contract_parser
 from main.models import Funding, Settlement, Block
 
@@ -21,8 +23,8 @@ logger = logging.getLogger(__name__)
 def get_raw_transaction_hex(txhash):
     rev_bytes_arr = bytearray.fromhex(txhash)[::-1]
     bchd_txhash = base64.b64encode(rev_bytes_arr).decode()
-    url = 'https://bchd.fountainhead.cash/v1/GetRawTransaction'
-    resp = requests(url, json={ 'hash': bchd_txhash })
+    url = settings.BCHD_BASE_URL + '/v1/GetRawTransaction'
+    resp = requests.post(url, json={ 'hash': bchd_txhash })
     raw_tx_b64 = resp.json()['transaction']
     return base64.b64decode(raw_tx_b64).hex()
 
@@ -63,7 +65,7 @@ def process_confirmation(txid, block_height):
             settlement.block = block_check.first()
             settlement.save()
         else:
-            url = 'https://bchd.fountainhead.cash/v1/GetBlockInfo'
+            url = settings.BCHD_BASE_URL + '/v1/GetBlockInfo'
             resp = requests.post(url, json={'height': block_height})
             timestamp = int(resp.json()['info']['timestamp'])
             block = Block(
@@ -78,8 +80,11 @@ def process_confirmation(txid, block_height):
 
 def run():
     logger.info('Running the transactions tracker...')
-    creds = grpc.ssl_channel_credentials()
-    with grpc.secure_channel('bchd.ny1.simpleledger.io', creds) as channel:
+    if os.path.exists(settings.BCHD_SSL_CERT_PATH):
+        creds = grpc.ssl_channel_credentials(settings.BCHD_SSL_CERT_PATH)
+    else:
+        creds = grpc.ssl_channel_credentials()
+    with grpc.secure_channel(settings.BCHD_BASE_URL, creds) as channel:
         stub = bchrpc.bchrpcStub(channel)
 
         req = pb.GetBlockchainInfoRequest()

@@ -168,3 +168,8 @@ LOGGING = {
         }
     },
 }
+
+# BCHD settings
+
+BCHD_BASE_URL = config('BCHD_BASE_URL', default='https://bchd.fountainhead.cash')
+BCHD_SSL_CERT_PATH = os.path.join(BASE_DIR, 'bchd.crt')

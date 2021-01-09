@@ -321,3 +321,8 @@ dist
 # profiling data
 
 # End of https://www.toptal.com/developers/gitignore/api/python,django,node
+
+# Custom
+
+bchd.crt
+.DS_Store
