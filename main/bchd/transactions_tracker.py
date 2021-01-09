@@ -20,13 +20,21 @@ from main.models import Funding, Settlement, Block
 logger = logging.getLogger(__name__)
 
 
+# Open BCHD channel connection
+if os.path.exists(settings.BCHD_SSL_CERT_PATH):
+    cert = open(settings.BCHD_SSL_CERT_PATH, 'rb').read()
+    creds = grpc.ssl_channel_credentials(cert)
+else:
+    creds = grpc.ssl_channel_credentials()
+channel = grpc.secure_channel(settings.BCHD_GRPC_URL, creds)
+stub = bchrpc.bchrpcStub(channel)
+
+
 def get_raw_transaction_hex(txhash):
-    rev_bytes_arr = bytearray.fromhex(txhash)[::-1]
-    bchd_txhash = base64.b64encode(rev_bytes_arr).decode()
-    url = settings.BCHD_BASE_URL + '/v1/GetRawTransaction'
-    resp = requests.post(url, json={ 'hash': bchd_txhash })
-    raw_tx_b64 = resp.json()['transaction']
-    return base64.b64decode(raw_tx_b64).hex()
+    req = pb.GetRawTransactionRequest()
+    req.hash = bytes.fromhex(txhash)[::-1]
+    resp = stub.GetRawTransaction(req)
+    return resp.transaction.hex()
 
 
 def save_settlement(data):
@@ -65,9 +73,10 @@ def process_confirmation(txid, block_height):
             settlement.block = block_check.first()
             settlement.save()
         else:
-            url = settings.BCHD_BASE_URL + '/v1/GetBlockInfo'
-            resp = requests.post(url, json={'height': block_height})
-            timestamp = int(resp.json()['info']['timestamp'])
+            req = pb.GetBlockInfoRequest()
+            req.height = block_height
+            resp = stub.GetBlockInfo(req)    
+            timestamp = resp.info.timestamp
             block = Block(
                 height=block_height,
                 timestamp=datetime.fromtimestamp(timestamp).replace(tzinfo=pytz.utc)
@@ -80,41 +89,35 @@ def process_confirmation(txid, block_height):
 
 def run():
     logger.info('Running the transactions tracker...')
-    if os.path.exists(settings.BCHD_SSL_CERT_PATH):
-        creds = grpc.ssl_channel_credentials(settings.BCHD_SSL_CERT_PATH)
-    else:
-        creds = grpc.ssl_channel_credentials()
-    with grpc.secure_channel(settings.BCHD_BASE_URL, creds) as channel:
-        stub = bchrpc.bchrpcStub(channel)
 
-        req = pb.GetBlockchainInfoRequest()
-        resp = stub.GetBlockchainInfo(req)
-        logger.info(resp)
+    req = pb.GetBlockchainInfoRequest()
+    resp = stub.GetBlockchainInfo(req)
+    logger.info(resp)
 
-        tx_filter = pb.TransactionFilter()
-        tx_filter.all_transactions = True
+    tx_filter = pb.TransactionFilter()
+    tx_filter.all_transactions = True
 
-        req = pb.SubscribeTransactionsRequest()
-        req.include_in_block = True
-        req.include_mempool = True
-        req.include_in_block = True
-        req.subscribe.CopyFrom(tx_filter)
+    req = pb.SubscribeTransactionsRequest()
+    req.include_in_block = True
+    req.include_mempool = True
+    req.include_in_block = True
+    req.subscribe.CopyFrom(tx_filter)
 
-        for notification in stub.SubscribeTransactions(req):
+    for notification in stub.SubscribeTransactions(req):
+        tx = notification.unconfirmed_transaction.transaction
+        confirmed = False
+        if len(tx.hash) > 0:
             tx = notification.unconfirmed_transaction.transaction
-            confirmed = False
-            if len(tx.hash) > 0:
-                tx = notification.unconfirmed_transaction.transaction
-            else:
-                confirmed = True
-                tx = notification.confirmed_transaction
+        else:
+            confirmed = True
+            tx = notification.confirmed_transaction
 
-            tx_hash = bytearray(tx.hash[::-1]).hex()
-            if confirmed:
-                process_confirmation(tx_hash, tx.block_height)
+        tx_hash = bytearray(tx.hash[::-1]).hex()
+        if confirmed:
+            process_confirmation(tx_hash, tx.block_height)
 
-            if len(tx.inputs) == 1 and len(tx.outputs) == 2:
-                raw_tx_hex = get_raw_transaction_hex(tx_hash)
-                parsed_tx = contract_parser.detect_and_parse(raw_tx_hex)
-                if parsed_tx:
-                    save_settlement(parsed_tx)
+        if len(tx.inputs) == 1 and len(tx.outputs) == 2:
+            raw_tx_hex = get_raw_transaction_hex(tx_hash)
+            parsed_tx = contract_parser.detect_and_parse(raw_tx_hex)
+            if parsed_tx:
+                save_settlement(parsed_tx)
