@@ -5,6 +5,7 @@ import pytz
 import base64
 import logging
 import requests
+import collections
 from datetime import datetime
 
 import sys
@@ -17,9 +18,6 @@ from django.conf import settings
 from main.anyhedge import contract_parser
 from main.models import Funding, Settlement, Block
 
-from bloom_filter import BloomFilter
-
-bloom = BloomFilter(max_elements=10000, error_rate=0.1)
 logger = logging.getLogger(__name__)
 
 
@@ -106,6 +104,8 @@ def run():
     req.include_in_block = True
     req.subscribe.CopyFrom(tx_filter)
 
+    parsed_txs = collections.deque(maxlen=10000)
+
     for notification in stub.SubscribeTransactions(req):
         tx = notification.unconfirmed_transaction.transaction
         confirmed = False
@@ -120,14 +120,14 @@ def run():
 
         if len(tx.inputs) == 1 and len(tx.outputs) == 2:
             if tx.outputs[0].script_class == 'pubkeyhash' and tx.outputs[1].script_class == 'pubkeyhash':
-                if tx_hash not in bloom:
+                if hash(tx_hash) not in parsed_txs:
                     log_msg += ' *'
                     if not Settlement.objects.filter(spending_transaction=tx_hash).exists():                
                         raw_tx_hex = get_raw_transaction_hex(tx_hash)
                         parsed_tx = contract_parser.detect_and_parse(raw_tx_hex)
                         if parsed_tx:
                             save_settlement(parsed_tx)
-                    bloom.add(tx_hash)
+                    parsed_txs.append(hash(tx_hash))
         logger.info(log_msg)
 
         if confirmed:
