@@ -116,16 +116,19 @@ def run():
             tx = notification.confirmed_transaction
 
         tx_hash = bytearray(tx.hash[::-1]).hex()
-        logger.info('tx: {0} | confirmed: {1} [{2}]'.format(tx_hash, str(confirmed).lower(), tx.block_height))
+        log_msg = 'tx: {0} | confirmed: {1} [{2}]'.format(tx_hash, str(confirmed).lower(), tx.block_height)
 
         if len(tx.inputs) == 1 and len(tx.outputs) == 2:
-            if tx_hash not in bloom:
-                if not Settlement.objects.filter(spending_transaction=tx_hash).exists():                
-                    raw_tx_hex = get_raw_transaction_hex(tx_hash)
-                    parsed_tx = contract_parser.detect_and_parse(raw_tx_hex)
-                    if parsed_tx:
-                        save_settlement(parsed_tx)
-                bloom.add(tx_hash)
+            if tx.outputs[0].script_class == 'pubkeyhash' and tx.outputs[1].script_class == 'pubkeyhash':
+                if tx_hash not in bloom:
+                    log_msg += ' *'
+                    if not Settlement.objects.filter(spending_transaction=tx_hash).exists():                
+                        raw_tx_hex = get_raw_transaction_hex(tx_hash)
+                        parsed_tx = contract_parser.detect_and_parse(raw_tx_hex)
+                        if parsed_tx:
+                            save_settlement(parsed_tx)
+                    bloom.add(tx_hash)
+        logger.info(log_msg)
 
         if confirmed:
             process_confirmation(tx_hash, tx.block_height)
