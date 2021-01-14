@@ -8,6 +8,13 @@ class Block(models.Model):
 class Funding(models.Model):
     address = models.CharField(max_length=60)
     transaction = models.CharField(max_length=70)
+    transaction_block = models.ForeignKey(
+        Block,
+        related_name='funding_transactions',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
     output_index = models.IntegerField()
     low_liquidation_price = models.IntegerField()
     high_liquidation_price = models.IntegerField()
