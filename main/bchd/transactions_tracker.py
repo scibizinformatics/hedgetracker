@@ -1,12 +1,10 @@
 import os
 import grpc
 import time
-import pytz
 import base64
 import logging
 import requests
 import collections
-from datetime import datetime
 
 import sys
 sys.path.append('/app/main/bchd/protobuf')
@@ -17,6 +15,7 @@ import bchrpc_pb2_grpc as bchrpc
 from django.conf import settings
 from main.anyhedge import contract_parser
 from main.models import Funding, Settlement, Block
+from main.utils import ts_to_date, get_BCH_USD_price
 
 logger = logging.getLogger(__name__)
 
@@ -42,12 +41,12 @@ def get_funding_txn_block(txhash):
     req = pb.GetBlockInfoRequest()
     req.hash = txhash
     resp = stub.GetBlockInfo(req)
-    
-    funding_txn_block = Block(
+    timestamp = resp.info.timestamp
+
+    funding_txn_block, created = Block.objects.get_or_create(
         height=resp.info.height,
-        timestamp=resp.info.timestamp
+        timestamp=ts_to_date(timestamp)
     )
-    funding_txn_block.save()
     return funding_txn_block
 
 
@@ -95,11 +94,10 @@ def process_confirmation(txid, block_height):
             req.height = block_height
             resp = stub.GetBlockInfo(req)    
             timestamp = resp.info.timestamp
-            block = Block(
+            block, created = Block.objects.get_or_create(
                 height=block_height,
-                timestamp=datetime.fromtimestamp(timestamp).replace(tzinfo=pytz.utc)
+                timestamp=ts_to_date(timestamp)
             )
-            block.save()
             settlement.block = block
             settlement.save()
         logger.info('Confirmed Tx @ {0}: {1}'.format(block_height, txid))
@@ -139,7 +137,20 @@ def run():
             if tx.outputs[0].script_class == 'pubkeyhash' and tx.outputs[1].script_class == 'pubkeyhash':
                 if hash(tx_hash) not in parsed_txs:
                     log_msg += ' *'
-                    if not Settlement.objects.filter(spending_transaction=tx_hash).exists():                
+                    if not Settlement.objects.filter(spending_transaction=tx_hash).exists():
+                        req = pb.GetBlockInfoRequest()
+                        req.height = tx.block_height
+                        resp = stub.GetBlockInfo(req)
+
+                        block, created = Block.objects.get_or_create(
+                            height=resp.info.height,
+                            timestamp = ts_to_date(resp.info.timestamp)
+                        )
+
+                        if created:
+                            block.bch_usd_price = get_BCH_USD_price()
+                            block.save()
+
                         raw_tx_hex = get_raw_transaction_hex(tx_hash)
                         parsed_tx = contract_parser.detect_and_parse(raw_tx_hex)
                         if parsed_tx:

@@ -4,6 +4,8 @@ from django.db import models
 class Block(models.Model):
     height = models.IntegerField() 
     timestamp = models.DateTimeField()
+    bch_usd_price = models.FloatField(default=0)
+
 
 class Funding(models.Model):
     address = models.CharField(max_length=60)
@@ -31,6 +33,7 @@ class Funding(models.Model):
     high_low_delta_truncated_zeroes = models.CharField(max_length=10)
     hedge_units_x_sats_per_bch_high_trunc = models.IntegerField()
     payout_sats_low_trunc = models.IntegerField()
+
 
 class Settlement(models.Model):
     funding = models.OneToOneField(

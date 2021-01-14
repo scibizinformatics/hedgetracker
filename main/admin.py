@@ -10,6 +10,7 @@ class BlockAdmin(admin.ModelAdmin):
     list_display = [
         'height',
         'timestamp',
+        'bch_usd_price',
     ]
 
 
