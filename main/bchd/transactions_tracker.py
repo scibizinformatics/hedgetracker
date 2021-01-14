@@ -38,10 +38,27 @@ def get_raw_transaction_hex(txhash):
     return resp.transaction.hex()
 
 
+def get_funding_txn_block(txhash):
+    req = pb.GetBlockInfoRequest()
+    req.hash = txhash
+    resp = stub.GetBlockInfo(req)
+    
+    funding_txn_block = Block(
+        height=resp.info.height,
+        timestamp=resp.info.timestamp
+    )
+    funding_txn_block.save()
+    return funding_txn_block
+
+
 def save_settlement(data):
+    txhash = data['funding']['fundingTransaction']
+    funding_txn_block = get_funding_txn_block(txhash)
+
     funding = Funding(
         address=data['address'],
-        transaction=data['funding']['fundingTransaction'],
+        transaction=txhash,
+        transaction_block=funding_txn_block,
         output_index=data['funding']['fundingOutput'],
         low_liquidation_price=data['parameters']['lowLiquidationPrice'],
         high_liquidation_price=data['parameters']['highLiquidationPrice'],
