@@ -7,6 +7,9 @@ class Block(models.Model):
     timestamp = models.DateTimeField()
     bch_usd_price = models.FloatField(default=0)
 
+    class Meta:
+        ordering = ('-timestamp', )
+
 
 class Funding(models.Model):
     address = models.CharField(max_length=60)
@@ -35,6 +38,9 @@ class Funding(models.Model):
     hedge_units_x_sats_per_bch_high_trunc = models.FloatField()
     payout_sats_low_trunc = models.FloatField()
 
+    class Meta:
+        ordering = ('-transaction_block__timestamp', )
+
 
 class Settlement(models.Model):
     funding = models.OneToOneField(
@@ -54,6 +60,9 @@ class Settlement(models.Model):
         blank=True
     )
 
+    class Meta:
+        ordering = ('-block__timestamp', )
+
 
 class Metric(models.Model):
     total_contract_satoshis = models.FloatField()
@@ -66,4 +75,4 @@ class Metric(models.Model):
     date_created = models.DateTimeField(default=timezone.now)
 
     class Meta:
-        ordering = ('-date_created', )
+        ordering = ('date_created', )
