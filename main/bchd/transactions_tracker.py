@@ -1,5 +1,4 @@
 import os
-import grpc
 import time
 import base64
 import logging
@@ -10,43 +9,25 @@ import sys
 sys.path.append('/app/main/bchd/protobuf')
 
 import bchrpc_pb2 as pb
-import bchrpc_pb2_grpc as bchrpc
 
 from django.conf import settings
 from main.anyhedge import contract_parser
 from main.models import Funding, Settlement, Block
-from main.utils import ts_to_date, get_BCH_USD_price
+from main.utils import ts_to_date, get_block_info
 
 logger = logging.getLogger(__name__)
-
-
-# Open BCHD channel connection
-if os.path.exists(settings.BCHD_SSL_CERT_PATH):
-    cert = open(settings.BCHD_SSL_CERT_PATH, 'rb').read()
-    creds = grpc.ssl_channel_credentials(cert)
-else:
-    creds = grpc.ssl_channel_credentials()
-channel = grpc.secure_channel(settings.BCHD_GRPC_URL, creds)
-stub = bchrpc.bchrpcStub(channel)
 
 
 def get_raw_transaction_hex(txhash):
     req = pb.GetRawTransactionRequest()
     req.hash = bytes.fromhex(txhash)[::-1]
-    resp = stub.GetRawTransaction(req)
+    resp = settings.GRPC_STUB.GetRawTransaction(req)
     return resp.transaction.hex()
 
 
 def get_funding_txn_block(txhash):
-    req = pb.GetBlockInfoRequest()
-    req.hash = txhash
-    resp = stub.GetBlockInfo(req)
-    timestamp = resp.info.timestamp
-
-    funding_txn_block, created = Block.objects.get_or_create(
-        height=resp.info.height,
-        timestamp=ts_to_date(timestamp)
-    )
+    height, timestamp = get_block_info(txhash=txhash)
+    funding_txn_block = Block.objects.get(height=height)
     return funding_txn_block
 
 
@@ -90,14 +71,12 @@ def process_confirmation(txid, block_height):
             settlement.block = block_check.first()
             settlement.save()
         else:
-            req = pb.GetBlockInfoRequest()
-            req.height = block_height
-            resp = stub.GetBlockInfo(req)    
-            timestamp = resp.info.timestamp
-            block, created = Block.objects.get_or_create(
+            height, timestamp = get_block_info(height=block_height)
+            block = Block(
                 height=block_height,
                 timestamp=ts_to_date(timestamp)
             )
+            block.save()
             settlement.block = block
             settlement.save()
         logger.info('Confirmed Tx @ {0}: {1}'.format(block_height, txid))
@@ -107,7 +86,7 @@ def run():
     logger.info('Running the transactions tracker...')
 
     req = pb.GetBlockchainInfoRequest()
-    resp = stub.GetBlockchainInfo(req)
+    resp = settings.GRPC_STUB.GetBlockchainInfo(req)
     logger.info(resp)
 
     tx_filter = pb.TransactionFilter()
@@ -121,7 +100,7 @@ def run():
 
     parsed_txs = collections.deque(maxlen=10000)
 
-    for notification in stub.SubscribeTransactions(req):
+    for notification in settings.GRPC_STUB.SubscribeTransactions(req):
         tx = notification.unconfirmed_transaction.transaction
         confirmed = False
         if len(tx.hash) > 0:
@@ -138,18 +117,14 @@ def run():
                 if hash(tx_hash) not in parsed_txs:
                     log_msg += ' *'
                     if not Settlement.objects.filter(spending_transaction=tx_hash).exists():
-                        req = pb.GetBlockInfoRequest()
-                        req.height = tx.block_height
-                        resp = stub.GetBlockInfo(req)
-
+                        height, timestamp = get_block_info(height=tx.block_height)
                         block, created = Block.objects.get_or_create(
-                            height=resp.info.height,
-                            timestamp = ts_to_date(resp.info.timestamp)
+                            height=height
                         )
-
                         if created:
-                            block.bch_usd_price = get_BCH_USD_price()
-                            block.save()
+                            Block.objects.filter(id=block.id).update(
+                                timestamp=ts_to_date(timestamp)
+                            )
 
                         raw_tx_hex = get_raw_transaction_hex(tx_hash)
                         parsed_tx = contract_parser.detect_and_parse(raw_tx_hex)
