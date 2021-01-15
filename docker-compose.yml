@@ -18,3 +18,7 @@ services:
       - postgres
     volumes:
       - ./:/app
+  redis:
+    image: "redis:alpine"
+    volumes:
+      - ../hedgetracker-redis-data:/redis-data
