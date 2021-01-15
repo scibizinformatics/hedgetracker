@@ -182,3 +182,16 @@ BCHD_SSL_CERT_PATH = os.path.join(BASE_DIR, 'bchd.crt')
 # websocket vars
 MAIN_ROOM = 'main_room'
 MAIN_CHANNEL = 'detoken'
+
+
+REDIS_HOST = config('REDIS_HOST', default='localhost')
+REDIS_PORT = config('REDIS_PORT', default=6379)
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [(REDIS_HOST, REDIS_PORT)],
+        },
+    }
+}
