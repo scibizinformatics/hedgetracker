@@ -20,5 +20,7 @@ def associate_block(sender, instance, **kwargs):
         block.save()
         instance.update(maturity_block=block)
 
+# Catch changes in Funding & Settlement
+
 
 post_save.connect(associate_block, sender=Funding)

@@ -177,3 +177,8 @@ LOGGING = {
 
 BCHD_GRPC_URL = config('BCHD_GRPC_URL', default='bchd.fountainhead.cash')
 BCHD_SSL_CERT_PATH = os.path.join(BASE_DIR, 'bchd.crt')
+
+
+# websocket vars
+MAIN_ROOM = 'main_room'
+MAIN_CHANNEL = 'detoken'
