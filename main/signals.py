@@ -1,7 +1,12 @@
 from django.db.models.signals import post_save
 from django.conf import settings
 
-from main.models import Funding, Block
+from main.metrics import MetricsHandler
+from main.models import (
+    Funding,
+    Block,
+    Settlement,
+)
 from main.utils import (
     ts_to_date, 
     get_BCH_USD_price,
@@ -33,5 +38,12 @@ def save_bch_usd_price(sender, instance, created=False, **kwargs):
         instance.save()
 
 
+def compute_metrics(sender, instance, created=False, **kwargs):
+    if created:
+        metric_handler = MetricsHandler(instance.id)
+        metric_handler.compute_metrics()
+
+
 post_save.connect(associate_block, sender=Funding)
 post_save.connect(save_bch_usd_price, sender=Block)
+post_save.connect(compute_metrics, sender=Settlement)
