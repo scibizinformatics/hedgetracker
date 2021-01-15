@@ -36,6 +36,13 @@ class SettlementAdmin(admin.ModelAdmin):
     ]
 
 
+class MetricAdmin(admin.ModelAdmin):
+    list_display = [
+        'date_created',
+    ]
+
+
 admin.site.register(Block, BlockAdmin)
 admin.site.register(Funding, FundingAdmin)
 admin.site.register(Settlement, SettlementAdmin)
+admin.site.register(Metric, MetricAdmin)

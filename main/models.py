@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.db import models
 
 
@@ -18,8 +19,8 @@ class Funding(models.Model):
         blank=True
     )
     output_index = models.IntegerField()
-    low_liquidation_price = models.IntegerField()
-    high_liquidation_price = models.IntegerField()
+    low_liquidation_price = models.FloatField()
+    high_liquidation_price = models.FloatField()
     earliest_liquidation_height = models.IntegerField()
     maturity_height = models.IntegerField()
     maturity_block = models.ForeignKey(
@@ -31,8 +32,8 @@ class Funding(models.Model):
     )
     low_truncated_zeroes = models.CharField(max_length=10)
     high_low_delta_truncated_zeroes = models.CharField(max_length=10)
-    hedge_units_x_sats_per_bch_high_trunc = models.IntegerField()
-    payout_sats_low_trunc = models.IntegerField()
+    hedge_units_x_sats_per_bch_high_trunc = models.FloatField()
+    payout_sats_low_trunc = models.FloatField()
 
 
 class Settlement(models.Model):
@@ -42,9 +43,9 @@ class Settlement(models.Model):
     )
     spending_transaction = models.CharField(max_length=70)
     settlement_type = models.CharField(max_length=20)
-    hedge_satoshis = models.IntegerField()
-    long_satoshis = models.IntegerField()
-    oracle_price = models.IntegerField()
+    hedge_satoshis = models.FloatField()
+    long_satoshis = models.FloatField()
+    oracle_price = models.FloatField()
     block = models.ForeignKey(
         Block,
         related_name='settlement_transactions',
@@ -52,3 +53,17 @@ class Settlement(models.Model):
         null=True,
         blank=True
     )
+
+
+class Metric(models.Model):
+    total_contract_satoshis = models.FloatField()
+    hedge_usd_payout = models.FloatField()
+    long_usd_payout = models.FloatField()
+    approx_hedge_payin_satoshis = models.FloatField()
+    approx_long_payin_satoshis = models.FloatField()
+    approx_long_usd_payin = models.FloatField()
+    # long’s approx profit/loss in terms of sats, $ or %  # still not sure what this is
+    date_created = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ('-date_created', )
