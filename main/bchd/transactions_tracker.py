@@ -119,12 +119,9 @@ def run():
                     if not Settlement.objects.filter(spending_transaction=tx_hash).exists():
                         height, timestamp = get_block_info(height=tx.block_height)
                         block, created = Block.objects.get_or_create(
-                            height=height
+                            height=height,
+                            timestamp=ts_to_date(timestamp)
                         )
-                        if created:
-                            Block.objects.filter(id=block.id).update(
-                                timestamp=ts_to_date(timestamp)
-                            )
 
                         raw_tx_hex = get_raw_transaction_hex(tx_hash)
                         parsed_tx = contract_parser.detect_and_parse(raw_tx_hex)
