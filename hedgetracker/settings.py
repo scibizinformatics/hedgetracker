@@ -10,8 +10,13 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
+import sys
+sys.path.append('/app/main/bchd/protobuf')
+
 import os
+import grpc
 from decouple import config
+import bchrpc_pb2_grpc as bchrpc
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -40,6 +45,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
+    'rest_framework',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -178,8 +186,32 @@ LOGGING = {
 BCHD_GRPC_URL = config('BCHD_GRPC_URL', default='bchd.fountainhead.cash')
 BCHD_SSL_CERT_PATH = os.path.join(BASE_DIR, 'bchd.crt')
 
+if os.path.exists(BCHD_SSL_CERT_PATH):
+    cert = open(BCHD_SSL_CERT_PATH, 'rb').read()
+    creds = grpc.ssl_channel_credentials(cert)
+else:
+    creds = grpc.ssl_channel_credentials()
 
-# websocket vars
+GRPC_CHANNEL = grpc.secure_channel(BCHD_GRPC_URL, creds)
+GRPC_STUB = bchrpc.bchrpcStub(GRPC_CHANNEL)
+
+
+# REST API and django-filters settings
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication'
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend'
+    ]
+}
+
+# Django-Channels settings
+
 MAIN_ROOM = 'main_room'
 MAIN_CHANNEL = 'detoken'
 

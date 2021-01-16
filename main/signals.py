@@ -1,26 +1,51 @@
 from django.db.models.signals import post_save
-from main.models import Funding, Block
-from datetime import datetime
+from django.conf import settings
+
+from main.metrics import MetricsHandler
+from main.models import (
+    Funding,
+    Block,
+    Settlement,
+)
+from main.utils import (
+    ts_to_date, 
+    get_BCH_USD_price,
+    get_block_info,
+)
+
 import requests
-import pytz
 
 
-def associate_block(sender, instance, **kwargs):
+def associate_block(sender, instance, created=False, **kwargs):
     block_check = Block.objects.filter(height=instance.maturity_height)
     if block_check.exists():
-        instance.update(maturity_block=block_check.first())
+        instance.maturity_block = block_check.first()
     else:
-        url = 'https://bchd.fountainhead.cash/v1/GetBlockInfo'
-        resp = requests.post(url, json={'height': instance.maturity_height})
-        timestamp = int(resp.json()['info']['timestamp'])
+        height, timestamp = get_block_info(height=instance.maturity_height)
         block = Block(
             height=instance.maturity_height,
-            timestamp=datetime.fromtimestamp(timestamp).replace(tzinfo=pytz.utc)
+            timestamp=ts_to_date(timestamp)
         )
         block.save()
-        instance.update(maturity_block=block)
+        instance.maturity_block = block
+    instance.save()
+
+
+def save_bch_usd_price(sender, instance, created=False, **kwargs):
+    if created:
+        price = get_BCH_USD_price()
+        instance.bch_usd_price = price
+        instance.save()
+
+
+def compute_metrics(sender, instance, created=False, **kwargs):
+    if created:
+        metric_handler = MetricsHandler(instance.id)
+        metric_handler.compute_metrics()
 
 # Catch changes in Funding & Settlement
 
 
 post_save.connect(associate_block, sender=Funding)
+post_save.connect(save_bch_usd_price, sender=Block)
+post_save.connect(compute_metrics, sender=Settlement)
