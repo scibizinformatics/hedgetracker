@@ -1,21 +1,16 @@
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.conf import settings
-# from main.serializers import AlertSerializer
 
 
-def send_Alert(message, notif_type, data={}):
-
-    # Alert = create_Alert(user, message, notif_type, data)
-    # Alert = AlertSerializer(Alert)
-    data = {'name': 'reamon'}
-
+# send real time data
+def send_rt_data(data_type, data):
     channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)(
-        f"{settings.MAIN_ROOM}_{settings.MAIN_CHANNEL}", 
+        settings.MAIN_ROOM,
         {
             "type": "send_update",
-            "operation": "alert", 
+            "operation": data_type, 
             "data": data
         }
     )

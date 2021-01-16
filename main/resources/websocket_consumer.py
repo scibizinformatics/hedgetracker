@@ -24,6 +24,7 @@ class MainConsumer(WebsocketConsumer):
         self.accept()
         logger.info("Websocket connected!")
 
+
     def disconnect(self, close_code):
         async_to_sync(self.channel_layer.group_discard)(
             self.room_name,
@@ -31,5 +32,8 @@ class MainConsumer(WebsocketConsumer):
         )
         logger.info("Websocket disonnected.")
 
+
     def send_update(self, data):
+        data['type'] = data['operation']
+        del data['operation']
         self.send(text_data=json.dumps(data))

@@ -227,3 +227,9 @@ CHANNEL_LAYERS = {
         },
     }
 }
+
+
+OPERATIONS = {
+    'SETTLEMENT': 'settlement',
+    'METRIC': 'metric'
+}

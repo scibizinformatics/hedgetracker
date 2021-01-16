@@ -1,13 +1,14 @@
 from django.db.models.signals import post_save
 from django.conf import settings
 
-from main.metrics import MetricsHandler
-from main.models import (
-    Funding,
-    Block,
-    Settlement,
+from main.utils.metrics import MetricsHandler
+from main.utils.alert import send_rt_data
+from main.models import *
+from main.serializers import (
+    SettlementSerializer,
+    MetricSerializer,
 )
-from main.utils import (
+from main.utils.utils import (
     ts_to_date, 
     get_BCH_USD_price,
     get_block_info,
@@ -43,9 +44,22 @@ def compute_metrics(sender, instance, created=False, **kwargs):
         metric_handler = MetricsHandler(instance.id)
         metric_handler.compute_metrics()
 
-# Catch changes in Funding & Settlement
+        # send new settlement txn data to front end through websocket
+        send_rt_data(
+            settings.OPERATIONS['SETTLEMENT'],
+            SettlementSerializer(instance)
+        )
+
+
+def send_metric_data(sender, instance, created=False, **kwargs):
+    if created:
+        send_rt_data(
+            settings.OPERATIONS['METRIC'],
+            MetricSerializer(instance)
+        )
 
 
 post_save.connect(associate_block, sender=Funding)
 post_save.connect(save_bch_usd_price, sender=Block)
 post_save.connect(compute_metrics, sender=Settlement)
+post_save.connect(send_metric_data, sender=Metric)
