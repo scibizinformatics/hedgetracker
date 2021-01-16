@@ -9,6 +9,7 @@ sys.path.append('/app/main/bchd/protobuf')
 import bchrpc_pb2 as pb
 from django.conf import settings
 
+
 logger = logging.getLogger(__name__)
 
 

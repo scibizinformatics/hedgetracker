@@ -13,7 +13,7 @@ import bchrpc_pb2 as pb
 from django.conf import settings
 from main.anyhedge import contract_parser
 from main.models import Funding, Settlement, Block
-from main.utils.utils import ts_to_date, get_block_info
+from main.helpers import ts_to_date, get_block_info
 
 logger = logging.getLogger(__name__)
 

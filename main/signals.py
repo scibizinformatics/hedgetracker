@@ -8,7 +8,7 @@ from main.serializers import (
     SettlementSerializer,
     MetricSerializer,
 )
-from main.utils.utils import (
+from main.helpers import (
     ts_to_date, 
     get_BCH_USD_price,
     get_block_info,
