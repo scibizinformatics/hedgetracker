@@ -43,6 +43,8 @@ def compute_metrics(sender, instance, created=False, **kwargs):
         metric_handler = MetricsHandler(instance.id)
         metric_handler.compute_metrics()
 
+# Catch changes in Funding & Settlement
+
 
 post_save.connect(associate_block, sender=Funding)
 post_save.connect(save_bch_usd_price, sender=Block)
