@@ -83,6 +83,12 @@ WSGI_APPLICATION = 'hedgetracker.wsgi.application'
 ASGI_APPLICATION = 'hedgetracker.asgi.application'
 
 
+if DEBUG:
+    CORS_ORIGIN_ALLOW_ALL = True
+else:
+    CORS_ORIGIN_WHITELIST = []
+
+
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
