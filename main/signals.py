@@ -34,7 +34,7 @@ def associate_block(sender, instance, created=False, **kwargs):
 
 def save_bch_usd_price(sender, instance, created=False, **kwargs):
     if created:
-        price = get_BCH_USD_price()
+        price = get_BCH_USD_price(is_simple_price=True)
         instance.bch_usd_price = price
         instance.save()
 

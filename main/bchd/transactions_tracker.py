@@ -124,8 +124,6 @@ def run():
                 if hash(tx_hash) not in parsed_txs:
                     log_msg += ' *'
                     if not Settlement.objects.filter(spending_transaction=tx_hash).exists():
-                        logger.error('wendy')
-                        logger.error(tx.hash[::-1])
                         height, timestamp = get_block_info(height=tx.block_height)
                         block, created = Block.objects.get_or_create(
                             height=height,

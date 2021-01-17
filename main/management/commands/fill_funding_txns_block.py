@@ -1,7 +1,8 @@
 from django.core.management.base import BaseCommand
 
 from main.bchd import transactions_tracker
-from main.models import Funding
+from main.helpers import get_BCH_USD_price
+from main.models import Funding, Block
 
 
 class Command(BaseCommand):
@@ -16,6 +17,11 @@ class Command(BaseCommand):
 
         for funding_txn in funding_txns_with_empty_block:
             block = transactions_tracker.get_funding_txn_block(funding_txn.transaction)
+            price = get_BCH_USD_price(date=block.timestamp)
+
+            Block.objects.filter(id=block.id).update(
+                bch_usd_price=price
+            )
             Funding.objects.filter(id=funding_txn.id).update(
                 transaction_block=block
             )
