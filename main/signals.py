@@ -18,18 +18,19 @@ import requests
 
 
 def associate_block(sender, instance, created=False, **kwargs):
-    block_check = Block.objects.filter(height=instance.maturity_height)
-    if block_check.exists():
-        instance.maturity_block = block_check.first()
-    else:
-        height, timestamp = get_block_info(height=instance.maturity_height)
-        block = Block(
-            height=instance.maturity_height,
-            timestamp=ts_to_date(timestamp)
-        )
-        block.save()
-        instance.maturity_block = block
-    instance.save()
+    if created:
+        block_check = Block.objects.filter(height=instance.maturity_height)
+        if block_check.exists():
+            instance.maturity_block = block_check.first()
+        else:
+            height, timestamp = get_block_info(height=instance.maturity_height)
+            block = Block(
+                height=instance.maturity_height,
+                timestamp=ts_to_date(timestamp)
+            )
+            block.save()
+            instance.maturity_block = block
+        instance.save()
 
 
 def save_bch_usd_price(sender, instance, created=False, **kwargs):
