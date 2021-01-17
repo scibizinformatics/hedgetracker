@@ -26,8 +26,15 @@ def get_raw_transaction_hex(txhash):
 
 
 def get_funding_txn_block(txhash):
-    height, timestamp = get_block_info(txhash=txhash)
-    funding_txn_block = Block.objects.get(height=height)
+    req = pb.GetTransactionRequest()
+    req.hash = bytes.fromhex(txhash)[::-1]
+    resp = settings.GRPC_STUB.GetTransaction(req)
+
+    funding_txn_block, created = Block.objects.get_or_create(
+        height=resp.transaction.block_height,
+        timestamp=ts_to_date(resp.transaction.timestamp)
+    )
+
     return funding_txn_block
 
 
@@ -117,6 +124,8 @@ def run():
                 if hash(tx_hash) not in parsed_txs:
                     log_msg += ' *'
                     if not Settlement.objects.filter(spending_transaction=tx_hash).exists():
+                        logger.error('wendy')
+                        logger.error(tx.hash[::-1])
                         height, timestamp = get_block_info(height=tx.block_height)
                         block, created = Block.objects.get_or_create(
                             height=height,
