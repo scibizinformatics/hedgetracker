@@ -19,7 +19,7 @@ class MetricsHandler(object):
 
         approx_hedge_payin_satoshis = self.get_approx_hedge_payin_satoshis(hedge_usd_payout)
         approx_long_payin_satoshis = total_contract_satoshis - approx_hedge_payin_satoshis
-        approx_long_usd_payin = self.get_approx_long_usd_payin()
+        approx_long_usd_payin = self.get_approx_long_usd_payin(approx_long_payin_satoshis)
 
         metric = Metric(
             total_contract_satoshis=total_contract_satoshis,
@@ -27,7 +27,8 @@ class MetricsHandler(object):
             long_usd_payout=long_usd_payout,
             approx_hedge_payin_satoshis=approx_hedge_payin_satoshis,
             approx_long_payin_satoshis=approx_long_payin_satoshis,
-            approx_long_usd_payin=approx_long_usd_payin
+            approx_long_usd_payin=approx_long_usd_payin,
+            date_created=self.SETTLEMENT.block.timestamp
         )
         metric.save()
 

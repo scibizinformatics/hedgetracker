@@ -47,7 +47,7 @@ def compute_metrics(sender, instance, created=False, **kwargs):
         # send new settlement txn data to front end through websocket
         send_rt_data(
             settings.OPERATIONS['SETTLEMENT'],
-            SettlementSerializer(instance)
+            SettlementSerializer(instance).data
         )
 
 
@@ -55,7 +55,7 @@ def send_metric_data(sender, instance, created=False, **kwargs):
     if created:
         send_rt_data(
             settings.OPERATIONS['METRIC'],
-            MetricSerializer(instance)
+            MetricSerializer(instance).data
         )
 
 
