@@ -70,8 +70,12 @@ class Metric(models.Model):
     long_usd_payout = models.FloatField()
     approx_hedge_payin_satoshis = models.FloatField()
     approx_long_payin_satoshis = models.FloatField()
+    approx_hedge_usd_payin = models.FloatField(default=0)
     approx_long_usd_payin = models.FloatField()
-    # long’s approx profit/loss in terms of sats, $ or %  # still not sure what this is
+
+    approx_hedge_gain = models.FloatField(default=0)
+    approx_long_gain = models.FloatField(default=0)
+
     date_created = models.DateTimeField(default=timezone.now)
 
     class Meta:

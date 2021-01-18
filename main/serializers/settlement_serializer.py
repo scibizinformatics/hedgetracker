@@ -8,6 +8,7 @@ from main.models import Settlement
 class SettlementSerializer(serializers.ModelSerializer):
     funding = FundingSerializer()
     block = BlockSerializer()
+    oracle_price = serializers.SerializerMethodField()
     
     class Meta:
         model = Settlement
@@ -20,3 +21,6 @@ class SettlementSerializer(serializers.ModelSerializer):
             'oracle_price',
             'block',
         )
+
+    def get_oracle_price(self, settlement):
+        return settlement.oracle_price / 100
