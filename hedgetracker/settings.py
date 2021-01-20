@@ -10,13 +10,17 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
+from __future__ import absolute_import
 import sys
 sys.path.append('/app/main/bchd/protobuf')
 
 import os
 import grpc
+import redis
 from decouple import config
 import bchrpc_pb2_grpc as bchrpc
+from celery.schedules import crontab
+
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -137,6 +141,7 @@ USE_L10N = True
 
 USE_TZ = True
 
+DEPLOYMENT_INSTANCE = config('DEPLOYMENT_INSTANCE', default='dev')
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
@@ -224,6 +229,7 @@ MAIN_CHANNEL = 'detoken'
 
 
 REDIS_HOST = config('REDIS_HOST', default='localhost')
+REDIS_PASSWORD = config('REDIS_PASSWORD', default='')
 REDIS_PORT = config('REDIS_PORT', default=6379)
 
 CHANNEL_LAYERS = {
@@ -239,4 +245,48 @@ CHANNEL_LAYERS = {
 OPERATIONS = {
     'SETTLEMENT': 'settlement',
     'METRIC': 'metric'
+}
+
+SATOSHI_DECIMAL = 100000000
+
+
+# Celery settings
+
+CELERY_IMPORTS = ('main.tasks', )
+
+DB_NUM = [0,1,3]
+
+if DEPLOYMENT_INSTANCE == 'dev':
+    DB_NUM = [4,5,6]
+
+
+if REDIS_PASSWORD:
+    CELERY_BROKER_URL = 'redis://user:%s@%s:%s/%s' % (REDIS_PASSWORD, REDIS_HOST, REDIS_PORT, DB_NUM[0])
+    CELERY_RESULT_BACKEND = 'redis://user:%s@%s:%s/%s' % (REDIS_PASSWORD, REDIS_HOST, REDIS_PORT, DB_NUM[1])
+
+    REDISKV = redis.StrictRedis(
+        host=REDIS_HOST,
+        password=REDIS_PASSWORD,
+        port=6379,
+        db=DB_NUM[2]
+    )
+else:
+    CELERY_BROKER_URL = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, DB_NUM[0])
+    CELERY_RESULT_BACKEND = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, DB_NUM[1])
+
+    REDISKV = redis.StrictRedis(
+        host=REDIS_HOST,
+        port=6379,
+        db=DB_NUM[2]
+    )
+
+CELERY_TASK_ACKS_LATE = True
+CELERYD_PREFETCH_MULTIPLIER = 1
+CELERYD_MAX_TASKS_PER_CHILD = 5
+
+CELERY_BEAT_SCHEDULE = {
+    'compute-metrics': {
+        'task': 'main.tasks.compute_metrics',
+        'schedule': crontab(hour=23, minute=50)
+    },
 }

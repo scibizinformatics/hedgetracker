@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django.conf import settings
 from django.db import models
 
 
@@ -66,15 +67,16 @@ class Settlement(models.Model):
 
 class Metric(models.Model):
     total_contract_satoshis = models.FloatField()
-    hedge_usd_payout = models.FloatField()
-    long_usd_payout = models.FloatField()
-    approx_hedge_payin_satoshis = models.FloatField()
-    approx_long_payin_satoshis = models.FloatField()
-    approx_hedge_usd_payin = models.FloatField(default=0)
-    approx_long_usd_payin = models.FloatField()
+    usd_payouts = models.JSONField(default=dict)
+    # hedge_usd_payout = models.FloatField()
+    # long_usd_payout = models.FloatField()
+    # approx_hedge_payin_satoshis = models.FloatField()
+    # approx_long_payin_satoshis = models.FloatField()
+    # approx_hedge_usd_payin = models.FloatField(default=0)
+    # approx_long_usd_payin = models.FloatField()
 
-    approx_hedge_gain = models.FloatField(default=0)
-    approx_long_gain = models.FloatField(default=0)
+    # approx_hedge_gain = models.FloatField(default=0)
+    # approx_long_gain = models.FloatField(default=0)
 
     date_created = models.DateTimeField(default=timezone.now)
 

@@ -40,16 +40,16 @@ def save_bch_usd_price(sender, instance, created=False, **kwargs):
         instance.save()
 
 
-def compute_metrics(sender, instance, created=False, **kwargs):
-    if created:
-        metric_handler = MetricsHandler(instance.id)
-        metric_handler.compute_metrics()
+# def compute_metrics(sender, instance, created=False, **kwargs):
+#     if created:
+#         metric_handler = MetricsHandler(instance.id)
+#         metric_handler.compute_metrics()
 
-        # send new settlement txn data to front end through websocket
-        send_rt_data(
-            settings.OPERATIONS['SETTLEMENT'],
-            SettlementSerializer(instance).data
-        )
+#         # send new settlement txn data to front end through websocket
+#         send_rt_data(
+#             settings.OPERATIONS['SETTLEMENT'],
+#             SettlementSerializer(instance).data
+#         )
 
 
 def send_metric_data(sender, instance, created=False, **kwargs):
@@ -62,5 +62,5 @@ def send_metric_data(sender, instance, created=False, **kwargs):
 
 post_save.connect(associate_block, sender=Funding)
 post_save.connect(save_bch_usd_price, sender=Block)
-post_save.connect(compute_metrics, sender=Settlement)
+# post_save.connect(compute_metrics, sender=Settlement)
 post_save.connect(send_metric_data, sender=Metric)
